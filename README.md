@@ -71,3 +71,28 @@ The analysis uses Austrian parliamentary speech data with:
 ---
 
 *This project is part of a thesis on computational political discourse analysis.*
+
+
+
+TODO
+
+1.  a) Calculate embeddings per parliament for each speech in machine translated english.
+    b) Do the same for original language.
+
+2.  a) During each sitting there are multiple agendas. Find boundaries where we have semantic switches(where cosine similarity dips a lot) or where chairperson mentions agenda, etc
+    b) Manually annotate 10 sittings and compare.
+    c) Sensitivity analysis to check for parameters or window size or whatever else. 
+
+3. Recalculate embeddings for each segment.
+
+4.  a) Run BERTopic with these embeddings to find specific subtopics for all of the segments. Guided KeyBERTInspired maybe? 
+    b) Test with kmeans, hdbscan, test cluster sizes etc...
+    b) Use GPT to select one of the 22 categories for each subtopic. 
+
+5.  a) Compare with ParlaCAP labels see how often they match.
+    b) Contact Nikola Ljubesic to ask him for benchmark to compare. 
+
+6. Use another dataset, not only austria and compare the results.
+
+7. Proceed to LIWC-22
+
