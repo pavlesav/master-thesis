@@ -4,7 +4,7 @@ Computational analysis of parliamentary discourse in Austria, Croatia, and Great
 
 ## Overview
 
-This project analyzes ~650,000 parliamentary speeches (1996-2022) to understand how political language varies across topics, parties, and time using:
+This project analyzes ~1.4 million parliamentary speeches (1996-2022) to understand how political language varies across topics, parties, and time using:
 
 - **Semantic segmentation** of sessions into agenda items
 - **BERTopic + GPT-4** for topic classification (23 policy categories)
@@ -166,7 +166,6 @@ Execute notebooks in order:
 ---
 
 **Author**: Pavle Savkovic  
-**Institution**: [Your institution]  
 **Year**: 2026
 
 ---
