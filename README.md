@@ -1,172 +1,72 @@
-# Beyond the Speech: Context-Aware Topic Labelling and Linguistic Style in Parliamentary Debates
+# How Politicians Change the Way They Talk
 
-**Master's Thesis Repository**
+Computational analysis of parliamentary discourse in Austria, Croatia, and Great Britain using embeddings, topic modeling, and LIWC-22 linguistic features.
 
-Parliamentary debates are turn-taking, agenda-driven sequences, but most text-as-data methods treat speeches as isolated documents. This repository implements a **segment-first, context-aware pipeline** that segments parliamentary sittings into coherent agenda episodes, embeds and clusters segments, maps clusters to Comparative Agendas Project (CAP) domains, and profiles linguistic style with LIWC-22. The goal is **interpretable, scalable monitoring** of "what parliament was talking about" over time and across countries.
+## Overview
 
----
+This project analyzes ~650,000 parliamentary speeches (1996-2022) to understand how political language varies across topics, parties, and time using:
 
-## Dataset
+- **Semantic segmentation** of sessions into agenda items
+- **BERTopic + GPT-4** for topic classification (23 policy categories)
+- **LIWC-22 analysis** of 37 linguistic dimensions
+- **Temporal tracking** of discourse patterns
 
-**ParlaMint v5.0 Parliamentary Debates**
+## Quick Start
 
-- **Total speeches**: ~1.4M across three countries
-- **Countries & coverage**:
-  - **Austria (AT)**: 231,759 speeches (1996–2022)
-  - **Croatia (HR)**: 504,338 speeches (2003–2022)
-  - **Great Britain (GB)**: 670,912 speeches (2015–2022)
-- **Unit of analysis**: Agenda episodes / debate segments (not isolated speeches)
-- **Languages**: Native + English machine translation (AT, HR); native English (GB)
+### 1. Install Dependencies
 
-ParlaMint corpus: [CLARIN.si repository](https://www.clarin.si/repository/xmlui/handle/11356/2006)
+```bash
+pip install pandas numpy torch sentence-transformers scikit-learn bertopic umap-learn
+pip install openai python-dotenv tqdm matplotlib seaborn openpyxl
+```
 
----
+### 2. Download Data
 
-## Pipeline
+Get ParlaMint 5.0 from [CLARIN.si](https://www.clarin.si/repository/xmlui/handle/11356/2006):
+- ParlaMint-AT + ParlaMint-AT-en.ana (Austria, bilingual)
+- ParlaMint-HR + ParlaMint-HR-en.ana (Croatia, bilingual)
+- ParlaMint-GB (Great Britain, English)
 
-![Pipeline Overview](figures/pipeline.png)
-*Figure 1: Four-stage context-aware pipeline from raw debates to interpretable topic and style profiles.*
+Organize as:
+```
+data/
+├── AT/ParlaMint-AT/ParlaMint-AT.txt/[year folders]
+├── AT/ParlaMint5.0-AT-en.ana/ParlaMint-AT-en.txt/[year folders]
+├── HR/[same structure]
+└── GB/ParlaMint-GB/ParlaMint-GB.txt/[year folders]
+```
 
-### Stage 1: Sequential Segmentation (Agenda Episode Detection)
+### 3. Run Analysis Pipeline
 
-Combine two signals to detect episode boundaries:
+**Notebook 1: `data_preprocessing.ipynb`** (~8 hours per country)
+- Loads speeches, generates BGE-m3 embeddings
+- Detects segment boundaries using similarity + keywords
+- Outputs: `{AT,HR,GB}_speeches_processed.pkl`
 
-**(a) Semantic similarity drops**
-- Compute BGE-m3 embeddings for each speech
-- Use rolling windows to detect cosine similarity drops (95th percentile threshold)
+**Notebook 2: `topic_modelling.ipynb`** (~1-2 hours)
+- Runs BERTopic with GMM clustering (150-250 topics)
+- Classifies topics with GPT-4o-mini into CAP categories
+- Merges LIWC-22 results and human labels
+- Outputs: `{AT,HR,GB}_final.pkl`
 
-**(b) Chairperson agenda cues**
-- Language-specific keyword lists (e.g., "agenda", "next item", "point [number]")
-- Accept keyword boundary **only if** it aligns with a semantic shift (±3 speeches)
-- Otherwise rely on semantic boundaries alone
+**Notebook 3: `visualization.ipynb`** (~30 mins)
+- Generates confusion matrices, z-score heatmaps
+- Creates temporal plots with event markers
+- Outputs 30+ figures to `figures/` subfolders
 
-**Parameters**:
-- Minimum segment length: 5 speeches
-- Window size `k`: auto-optimized per country on sample using composite score (keyword alignment + within-segment coherence + between-segment separation)
+### 4. Configure Paths
 
-### Stage 2: Embeddings
+Update these variables in each notebook:
+- `data_preprocessing.ipynb`: `LOCAL_DATA_DIR` or `COLAB_DATA_DIR`
+- `topic_modelling.ipynb`: `BASE_DATA_DIR` 
+- `visualization.ipynb`: `BASE_DATA_DIR`, `base_output_dir`
 
-**Model**: BAAI/bge-m3 (multilingual, 8192 token window, 1024-d output)
+Set OpenAI API key in `.env`:
+```
+OPENAI_API_KEY=your_key_here
+```
 
-**Chunking strategy**:
-- Long texts → overlapping chunks (~25% overlap) → average embeddings
-- Speech-level overflow rare (~0.01%), but **segment-level overflow common (13–23%)**
-- For AT/HR: compute embeddings for **native + English MT** for cross-lingual consistency checks
-- LIWC analysis uses English MT
-
-### Stage 3: Clustering + CAP Mapping
-
-**Dimensionality reduction**: UMAP
-- Metric: cosine
-- Typical settings: `n_neighbors=15`, `n_components=10`, `min_dist=0.05`
-
-**Clustering**: Gaussian Mixture Model (GMM)
-- Soft assignments; handles elliptical clusters
-- Number of clusters chosen by scanning range, optimizing Silhouette + interpretability
-  - **AT**: 180 clusters
-  - **GB**: 170 clusters
-  - **HR**: 185 clusters
-
-**CAP domain mapping**:
-- Represent clusters with c-TF–IDF keywords (unigrams + bigrams)
-- Map each subtopic to exactly one CAP domain via conservative LLM prompt (GPT-4o-mini, temperature 0)
-- Allow "Other/Mix" when uncertain
-
-**CAP domains** (23 categories): Macroeconomics, Civil Rights, Health, Agriculture, Labour, Education, Environment, Energy, Immigration, Transportation, Law & Crime, Social Welfare, Housing, Domestic Commerce, Defence, Technology, Foreign Trade, International Affairs, Government Operations, Public Lands, Culture, State & Local Government Issues, Other/Mix.
-
-### Stage 4: LIWC-22 Style Profiling
-
-**Scoring**:
-- Score speeches with LIWC-22 software
-- For AT/HR: score English MT (recommended over ad-hoc non-English dictionaries)
-
-**Normalization**:
-- Convert LIWC category percentages to z-scores using LIWC's Test Kitchen Corpus norms (mean/std)
-- Generate both raw z-score heatmaps and **difference heatmaps** (e.g., macroeconomics minus others; coalition minus opposition)
-
----
-
-## Evaluation Philosophy
-
-**Why episode-level coherence matters**:
-- System designed for **agenda episode coherence**, not isolated utterances
-- Utterance-level F1 against context-free labels **underestimates practical usefulness**
-- Supervised classifiers can score higher on utterance tests, but this repo targets **episode monitoring and interpretability**
-
-**Evaluation benchmarks**:
-
-1. **ParlaCAP automatic labels** (full corpora)
-   - Noisy, utterance-level reference
-   - **Performance**: macro-F1 ≈ 0.47–0.55; micro-F1 ≈ 0.51–0.57
-
-2. **Human test sets** (GB, HR)
-   - Balanced, mid-length speeches; no chair turns
-   - Annotated in isolation (context-blind)
-   - **Performance**: macro-F1 ≈ 0.43 (GB), 0.47 (HR)
-
-**Error patterns**:
-- Confusions mostly between **adjacent CAP domains** (macro ↔ commerce; welfare ↔ health; international affairs ↔ trade)
-- Consistent with boundary/mixed episodes rather than random errors
-
-![Confusion Matrix - Croatia](figures/confusion/confusion_hr.png)
-*Figure 2: Confusion matrix (HR vs human test set). Errors cluster along diagonal/adjacent domains, reflecting episode boundaries.*
-
----
-
-## Key Findings
-
-### Topic-Specific Linguistic Style (Cross-Country Stable)
-
-**Macroeconomics**:
-- Strong overuse of money vocabulary
-- Higher authority/Clout markers
-- Lower moral/insight language vs other domains
-
-**Health**:
-- Lower politic/power markers
-- Slightly higher Tone (less adversarial)
-
-![LIWC Focal Topics](figures/liwc z scores/focal_topics_analysis.png)
-*Figure 3: LIWC difference heatmaps. Macroeconomics (top) vs Health (bottom) compared to other domains.*
-
-### Coalition vs Opposition Style (Cross-Country)
-
-**Coalition**:
-- More positive tone
-- More collective language ("we")
-
-**Opposition**:
-- More overt political/power vocabulary
-- More direct address
-
-![Institutional Roles](figures/liwc z scores/liwc_party_status.png)
-*Figure 4: Coalition vs Opposition LIWC differences (pooled across countries).*
-
-### Temporal Agenda Dynamics
-
-**Crisis substitution**:
-- Health rises during COVID-19 as Macroeconomics falls
-- Budget-cycle bumps in Macroeconomics (especially AT, GB)
-
-**External shocks**:
-- International Affairs spikes around migration crisis, Ukraine war
-- Defence more episodic
-
-![Temporal Topics](figures/temporal topic/topic_prevalence_economic.png)
-*Figure 5: Macroeconomics vs Health over time with crisis markers (AT, GB, HR).*
-
-### Cross-Lingual Embedding Consistency (AT, HR)
-
-- Native vs English-MT embeddings cluster with high similarity (means ~0.86 AT, ~0.84 HR)
-- Similarity increases mildly with length
-- Supports English-based LIWC pipeline
-
-![Cross-lingual Consistency](figures/embedding quality/embedding_quality_austria.png)
-*Figure 6: Cosine similarity between native and English-MT embeddings by text length (AT, HR).*
-
----
-
-## Repository Structure
+## Project Structure
 
 ```
 master-thesis/
