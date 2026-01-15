@@ -23,11 +23,6 @@ Thumbs.db
 *.tmp
 *.log
 
-# Output files
-*.png
-*.jpg
-*.pdf
-
 # Environment variables
 .env
 /code/data folder
