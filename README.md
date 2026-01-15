@@ -1,102 +1,278 @@
-# How Politicians Change the Way They Talk
+# Beyond the Speech: Context-Aware Topic Labelling and Linguistic Style in Parliamentary Debates
 
-Computational analysis of parliamentary discourse in Austria, Croatia, and Great Britain using embeddings, topic modeling, and LIWC-22 linguistic features.
+**Master's Thesis Repository**
 
-## Overview
+Parliamentary debates are turn-taking, agenda-driven sequences, but most text-as-data methods treat speeches as isolated documents. This repository implements a **segment-first, context-aware pipeline** that segments parliamentary sittings into coherent agenda episodes, embeds and clusters segments, maps clusters to Comparative Agendas Project (CAP) domains, and profiles linguistic style with LIWC-22. The goal is **interpretable, scalable monitoring** of "what parliament was talking about" over time and across countries.
 
-This project analyzes ~650,000 parliamentary speeches (1996-2022) to understand how political language varies across topics, parties, and time using:
+---
 
-- **Semantic segmentation** of sessions into agenda items
-- **BERTopic + GPT-4** for topic classification (23 policy categories)
-- **LIWC-22 analysis** of 37 linguistic dimensions
-- **Temporal tracking** of discourse patterns
+## Dataset
 
-## Quick Start
+**ParlaMint v5.0 Parliamentary Debates**
 
-### 1. Install Dependencies
+- **Total speeches**: ~1.4M across three countries
+- **Countries & coverage**:
+  - **Austria (AT)**: 231,759 speeches (1996–2022)
+  - **Croatia (HR)**: 504,338 speeches (2003–2022)
+  - **Great Britain (GB)**: 670,912 speeches (2015–2022)
+- **Unit of analysis**: Agenda episodes / debate segments (not isolated speeches)
+- **Languages**: Native + English machine translation (AT, HR); native English (GB)
 
-```bash
-pip install pandas numpy torch sentence-transformers scikit-learn bertopic umap-learn
-pip install openai python-dotenv tqdm matplotlib seaborn openpyxl
-```
+ParlaMint corpus: [CLARIN.si repository](https://www.clarin.si/repository/xmlui/handle/11356/2006)
 
-### 2. Download Data
+---
 
-Get ParlaMint 5.0 from [CLARIN.si](https://www.clarin.si/repository/xmlui/handle/11356/2006):
-- ParlaMint-AT + ParlaMint-AT-en.ana (Austria, bilingual)
-- ParlaMint-HR + ParlaMint-HR-en.ana (Croatia, bilingual)
-- ParlaMint-GB (Great Britain, English)
+## Pipeline
 
-Organize as:
-```
-data/
-├── AT/ParlaMint-AT/ParlaMint-AT.txt/[year folders]
-├── AT/ParlaMint5.0-AT-en.ana/ParlaMint-AT-en.txt/[year folders]
-├── HR/[same structure]
-└── GB/ParlaMint-GB/ParlaMint-GB.txt/[year folders]
-```
+![Pipeline Overview](figures/pipeline.png)
+*Figure 1: Four-stage context-aware pipeline from raw debates to interpretable topic and style profiles.*
 
-### 3. Run Analysis Pipeline
+### Stage 1: Sequential Segmentation (Agenda Episode Detection)
 
-**Notebook 1: `data_preprocessing.ipynb`** (~8 hours per country)
-- Loads speeches, generates BGE-m3 embeddings
-- Detects segment boundaries using similarity + keywords
-- Outputs: `{AT,HR,GB}_speeches_processed.pkl`
+Combine two signals to detect episode boundaries:
 
-**Notebook 2: `topic_modelling.ipynb`** (~1-2 hours)
-- Runs BERTopic with GMM clustering (150-250 topics)
-- Classifies topics with GPT-4o-mini into CAP categories
-- Merges LIWC-22 results and human labels
-- Outputs: `{AT,HR,GB}_final.pkl`
+**(a) Semantic similarity drops**
+- Compute BGE-m3 embeddings for each speech
+- Use rolling windows to detect cosine similarity drops (95th percentile threshold)
 
-**Notebook 3: `visualization.ipynb`** (~30 mins)
-- Generates confusion matrices, z-score heatmaps
-- Creates temporal plots with event markers
-- Outputs 30+ figures to `figures/` subfolders
+**(b) Chairperson agenda cues**
+- Language-specific keyword lists (e.g., "agenda", "next item", "point [number]")
+- Accept keyword boundary **only if** it aligns with a semantic shift (±3 speeches)
+- Otherwise rely on semantic boundaries alone
 
-### 4. Configure Paths
+**Parameters**:
+- Minimum segment length: 5 speeches
+- Window size `k`: auto-optimized per country on sample using composite score (keyword alignment + within-segment coherence + between-segment separation)
 
-Update these variables in each notebook:
-- `data_preprocessing.ipynb`: `LOCAL_DATA_DIR` or `COLAB_DATA_DIR`
-- `topic_modelling.ipynb`: `BASE_DATA_DIR` 
-- `visualization.ipynb`: `BASE_DATA_DIR`, `base_output_dir`
+### Stage 2: Embeddings
 
-Set OpenAI API key in `.env`:
-```
-OPENAI_API_KEY=your_key_here
-```
+**Model**: BAAI/bge-m3 (multilingual, 8192 token window, 1024-d output)
 
-## Project Structure
+**Chunking strategy**:
+- Long texts → overlapping chunks (~25% overlap) → average embeddings
+- Speech-level overflow rare (~0.01%), but **segment-level overflow common (13–23%)**
+- For AT/HR: compute embeddings for **native + English MT** for cross-lingual consistency checks
+- LIWC analysis uses English MT
+
+### Stage 3: Clustering + CAP Mapping
+
+**Dimensionality reduction**: UMAP
+- Metric: cosine
+- Typical settings: `n_neighbors=15`, `n_components=10`, `min_dist=0.05`
+
+**Clustering**: Gaussian Mixture Model (GMM)
+- Soft assignments; handles elliptical clusters
+- Number of clusters chosen by scanning range, optimizing Silhouette + interpretability
+  - **AT**: 180 clusters
+  - **GB**: 170 clusters
+  - **HR**: 185 clusters
+
+**CAP domain mapping**:
+- Represent clusters with c-TF–IDF keywords (unigrams + bigrams)
+- Map each subtopic to exactly one CAP domain via conservative LLM prompt (GPT-4o-mini, temperature 0)
+- Allow "Other/Mix" when uncertain
+
+**CAP domains** (23 categories): Macroeconomics, Civil Rights, Health, Agriculture, Labour, Education, Environment, Energy, Immigration, Transportation, Law & Crime, Social Welfare, Housing, Domestic Commerce, Defence, Technology, Foreign Trade, International Affairs, Government Operations, Public Lands, Culture, State & Local Government Issues, Other/Mix.
+
+### Stage 4: LIWC-22 Style Profiling
+
+**Scoring**:
+- Score speeches with LIWC-22 software
+- For AT/HR: score English MT (recommended over ad-hoc non-English dictionaries)
+
+**Normalization**:
+- Convert LIWC category percentages to z-scores using LIWC's Test Kitchen Corpus norms (mean/std)
+- Generate both raw z-score heatmaps and **difference heatmaps** (e.g., macroeconomics minus others; coalition minus opposition)
+
+---
+
+## Evaluation Philosophy
+
+**Why episode-level coherence matters**:
+- System designed for **agenda episode coherence**, not isolated utterances
+- Utterance-level F1 against context-free labels **underestimates practical usefulness**
+- Supervised classifiers can score higher on utterance tests, but this repo targets **episode monitoring and interpretability**
+
+**Evaluation benchmarks**:
+
+1. **ParlaCAP automatic labels** (full corpora)
+   - Noisy, utterance-level reference
+   - **Performance**: macro-F1 ≈ 0.47–0.55; micro-F1 ≈ 0.51–0.57
+
+2. **Human test sets** (GB, HR)
+   - Balanced, mid-length speeches; no chair turns
+   - Annotated in isolation (context-blind)
+   - **Performance**: macro-F1 ≈ 0.43 (GB), 0.47 (HR)
+
+**Error patterns**:
+- Confusions mostly between **adjacent CAP domains** (macro ↔ commerce; welfare ↔ health; international affairs ↔ trade)
+- Consistent with boundary/mixed episodes rather than random errors
+
+![Confusion Matrix - Croatia](figures/confusion/confusion_hr.png)
+*Figure 2: Confusion matrix (HR vs human test set). Errors cluster along diagonal/adjacent domains, reflecting episode boundaries.*
+
+---
+
+## Key Findings
+
+### Topic-Specific Linguistic Style (Cross-Country Stable)
+
+**Macroeconomics**:
+- Strong overuse of money vocabulary
+- Higher authority/Clout markers
+- Lower moral/insight language vs other domains
+
+**Health**:
+- Lower politic/power markers
+- Slightly higher Tone (less adversarial)
+
+![LIWC Focal Topics](figures/liwc z scores/focal_topics_analysis.png)
+*Figure 3: LIWC difference heatmaps. Macroeconomics (top) vs Health (bottom) compared to other domains.*
+
+### Coalition vs Opposition Style (Cross-Country)
+
+**Coalition**:
+- More positive tone
+- More collective language ("we")
+
+**Opposition**:
+- More overt political/power vocabulary
+- More direct address
+
+![Institutional Roles](figures/liwc z scores/liwc_party_status.png)
+*Figure 4: Coalition vs Opposition LIWC differences (pooled across countries).*
+
+### Temporal Agenda Dynamics
+
+**Crisis substitution**:
+- Health rises during COVID-19 as Macroeconomics falls
+- Budget-cycle bumps in Macroeconomics (especially AT, GB)
+
+**External shocks**:
+- International Affairs spikes around migration crisis, Ukraine war
+- Defence more episodic
+
+![Temporal Topics](figures/temporal topic/topic_prevalence_economic.png)
+*Figure 5: Macroeconomics vs Health over time with crisis markers (AT, GB, HR).*
+
+### Cross-Lingual Embedding Consistency (AT, HR)
+
+- Native vs English-MT embeddings cluster with high similarity (means ~0.86 AT, ~0.84 HR)
+- Similarity increases mildly with length
+- Supports English-based LIWC pipeline
+
+![Cross-lingual Consistency](figures/embedding quality/embedding_quality_austria.png)
+*Figure 6: Cosine similarity between native and English-MT embeddings by text length (AT, HR).*
+
+---
+
+## Repository Structure
 
 ```
 master-thesis/
 ├── code/
-│   ├── data_preprocessing.ipynb    # Embeddings + segmentation
-│   ├── topic_modelling.ipynb       # BERTopic + GPT + LIWC
-│   └── visualization.ipynb         # All figures
-├── data/                           # Raw + processed data
-├── figures/                        # Generated visualizations
+│   ├── 01_segmentation.ipynb          # Agenda episode detection
+│   ├── 02_embeddings.ipynb            # BGE-m3 speech & segment embeddings
+│   ├── 03_clustering_cap.ipynb        # UMAP + GMM + CAP mapping
+│   ├── 04_liwc_profiling.ipynb        # LIWC-22 scoring & z-scores
+│   └── 05_visualization.ipynb         # Generate all figures
+├── data/
+│   ├── raw/                           # ParlaMint v5 (not in repo; download separately)
+│   └── processed/                     # Intermediate outputs (.pkl, .csv)
+├── figures/                           # Generated visualizations
+│   ├── pipeline.png
+│   ├── confusion_matrix_hr.png
+│   ├── confusion_matrix_at.png
+│   ├── confusion_matrix_gb.png
+│   ├── liwc_difference_macro_health.png
+│   ├── liwc_coalition_opposition.png
+│   └── temporal_topics_comparison.png
+├── outputs/                           # Final tables & statistics
 └── README.md
 ```
 
-## Key Methods
+---
 
-- **Embeddings**: BAAI/bge-m3 (1024-dim, multilingual)
-- **Segmentation**: Cosine similarity (95th percentile) + chairperson keywords
-- **Topic Modeling**: BERTopic → GMM (150-250 clusters) → GPT-4o-mini classification
-- **LIWC**: Z-scores vs population norms, Holm's correction (α=0.01)
+## Reproducing Results
+
+### 1. Setup
+
+**Install dependencies**:
+```bash
+pip install pandas numpy torch sentence-transformers scikit-learn
+pip install bertopic umap-learn hdbscan openai python-dotenv tqdm
+pip install matplotlib seaborn openpyxl
+```
+
+**Download data**:
+- Get ParlaMint v5.0 from [CLARIN.si](https://www.clarin.si/repository/xmlui/handle/11356/2006)
+- Download: `ParlaMint-{AT,HR,GB}` + `ParlaMint-{AT,HR}-en.ana` (English MT)
+- Place in `data/raw/`
+
+**Configure**:
+- Set `OPENAI_API_KEY` in `.env` (for CAP mapping)
+- Update paths in each notebook (`BASE_DATA_DIR`, `OUTPUT_DIR`)
+
+### 2. Run Pipeline
+
+Execute notebooks in order:
+
+| Step | Notebook | Runtime | Output |
+|------|----------|---------|--------|
+| 1. Segmentation | `01_segmentation.ipynb` | ~2–4h per country | `{AT,HR,GB}_segments.pkl` |
+| 2. Embeddings | `02_embeddings.ipynb` | ~6–8h per country | `{AT,HR,GB}_embeddings.pkl` |
+| 3. Clustering + CAP | `03_clustering_cap.ipynb` | ~1–2h per country | `{AT,HR,GB}_topics_cap.pkl` |
+| 4. LIWC Profiling | `04_liwc_profiling.ipynb` | ~30min per country | `{AT,HR,GB}_liwc_zscores.pkl` |
+| 5. Visualization | `05_visualization.ipynb` | ~30min | `figures/*.png` |
+
+### 3. Generated Figures
+
+| Figure | Script | Output Path |
+|--------|--------|-------------|
+| Pipeline diagram | Manual (thesis) | `figures/pipeline.png` |
+| Confusion matrices | `05_visualization.ipynb` | `figures/confusion_matrix_{at,hr,gb}.png` |
+| LIWC focal topics | `05_visualization.ipynb` | `figures/liwc_difference_macro_health.png` |
+| Institutional roles | `05_visualization.ipynb` | `figures/liwc_coalition_opposition.png` |
+| Temporal dynamics | `05_visualization.ipynb` | `figures/temporal_topics_comparison.png` |
+| Cross-lingual consistency | `05_visualization.ipynb` | `figures/crosslingual_embedding_similarity.png` |
+
+---
 
 ## Requirements
 
-- Python 3.8+
-- GPU and at least 16GB or RAM recommended
-- OpenAI API key
-- LIWC-22 software
+- **Python**: 3.8+
+- **GPU**: Recommended (16GB+ VRAM for embeddings)
+- **Memory**: 32GB+ RAM (for large segment clustering)
+- **LIWC-22**: Separate license required ([liwc.app](https://www.liwc.app))
+- **OpenAI API**: For CAP domain mapping (GPT-4o-mini)
 
-## Citation
+---
 
-```
-[Add your thesis citation]
-```
+## Data Access
+
+- **ParlaMint v5.0**: External corpus; download from [CLARIN.si](https://www.clarin.si/repository/xmlui/handle/11356/2006)
+- **Repository**: Stores code and processing artifacts, not raw corpus
+- **Processed outputs**: Available on request (contact author)
+
+---
+
+## Notes
+
+- **Sequence matters**: Episode-level coherence is key for monitoring tasks
+- **Cross-country comparability**: Multilingual embeddings + CAP standardization
+- **Interpretability**: c-TF–IDF keywords + conservative LLM mapping + LIWC style profiles
+- **Limitations**: Human test sets are context-blind; episode-aware evaluation remains challenging
+
+---
+
+**Author**: Pavle Savkovic  
+**Institution**: [Your institution]  
+**Year**: 2026
+
+---
+
+## License
+
+[Specify license, e.g., MIT, CC-BY-4.0]
 
 
