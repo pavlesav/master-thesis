@@ -239,6 +239,7 @@ master-thesis/
 │   ├── temporal_topic/
 │   └── topic_distribution/
 ├── thesis_savkovic.pdf               # Full thesis
+├── paper_savkovic.pdf                # Journal manuscript (under review)
 ├── thesis_defense_savkovic.pptx      # Defence slides
 ├── requirements.txt
 ├── LICENSE
@@ -325,7 +326,7 @@ The cross-lingual similarity plots in `figures/embedding_quality/` are not gener
 }
 ```
 
-A journal article based on this thesis (Pavle Savković, Stefan Thalmann, Armin Spök, Denis Helic) is under review at the *Journal of Computational Social Science*.
+A journal article based on this thesis (Pavle Savković, Stefan Thalmann, Armin Spök, Denis Helic) is under review at the *Journal of Computational Social Science*; the submitted manuscript is included as [`paper_savkovic.pdf`](paper_savkovic.pdf).
 
 ---
 
