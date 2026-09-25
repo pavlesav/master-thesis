@@ -98,7 +98,7 @@ For AT and HR the cluster count is optimised on the English view and reused for 
 
 **Error patterns**: confusions fall mostly between **adjacent CAP domains** (Macroeconomics ↔ Domestic Commerce, Social Welfare ↔ Health, International Affairs ↔ Foreign Trade). This is consistent with boundary and mixed episodes rather than random errors.
 
-![Confusion matrix, Croatia](figures/confusion/confusion_hr.png)
+![Confusion matrix, Croatia](figures/confusion_matrices/confusion_hr.png)
 *Figure 2: Confusion matrix, HR vs. human test set. Errors cluster along the diagonal and in adjacent domains, reflecting episode boundaries.*
 
 ---
@@ -109,7 +109,7 @@ For AT and HR the cluster count is optimised on the English view and reused for 
 
 Relative to everyday-language norms, parliamentary speech in all three countries is elevated on `politic` and `power` and low on first-person singular. The topic and role differences below are variation within this institutional register.
 
-![LIWC z-scores vs. population norms](figures/liwc_z_scores/z_scores_countries.png)
+![LIWC z-scores vs. population norms](figures/liwc_profiles/z_scores_countries.png)
 *Figure 3: Country-wise LIWC-22 z-scores relative to the Test Kitchen norms.*
 
 ### Topic-specific linguistic style (stable across countries)
@@ -123,7 +123,7 @@ Relative to everyday-language norms, parliamentary speech in all three countries
 - Lower politic/power markers
 - Slightly higher Tone (less adversarial)
 
-![LIWC focal topics](figures/liwc_z_scores/focal_topics_analysis.png)
+![LIWC focal topics](figures/liwc_profiles/focal_topics_analysis.png)
 *Figure 4: LIWC difference heatmaps. Macroeconomics (top) and Health (bottom) compared with all other domains.*
 
 ### Coalition vs. opposition style (across countries)
@@ -136,28 +136,28 @@ Relative to everyday-language norms, parliamentary speech in all three countries
 - More overt political/power vocabulary
 - More direct address
 
-![Coalition vs. opposition](figures/liwc_z_scores/liwc_party_status.png)
+![Coalition vs. opposition](figures/liwc_profiles/liwc_party_status.png)
 *Figure 5: Coalition minus opposition LIWC differences per country and pooled.*
 
 In Austria, the SPÖ and FPÖ, which alternate between government and opposition, become more positive in tone when they enter government and less positive when they leave; the ÖVP, in government throughout, shows no comparable shift.
 
-![Austrian party tone](figures/temporal_party/party_tone_austria.png)
+![Austrian party tone](figures/party_style_over_time/party_tone_austria.png)
 *Figure 6: LIWC-22 Tone by Austrian party (three-month moving average), shaded by each party's time in government and opposition.*
 
 ### Role matters more than ideology or demographics
 
 Across the left–right spectrum, parliamentary style is far more stable than across the coalition–opposition divide. Gender and age differences exist but are modest compared with topic and role effects.
 
-![Political orientation](figures/liwc_z_scores/political_orientation.png)
+![Political orientation](figures/liwc_profiles/political_orientation.png)
 *Figure 7: LIWC-22 z-scores by left–right party position.*
 
 <details>
 <summary>Gender and age contrasts</summary>
 
-![Gender differences](figures/liwc_z_scores/liwc_gender.png)
+![Gender differences](figures/liwc_profiles/liwc_gender.png)
 *Women minus men, per country and pooled.*
 
-![Age groups](figures/liwc_z_scores/liwc_age_groups.png)
+![Age groups](figures/liwc_profiles/liwc_age_groups.png)
 *LIWC-22 z-scores by speaker age group.*
 
 </details>
@@ -172,12 +172,12 @@ Across the left–right spectrum, parliamentary style is far more stable than ac
 - International Affairs spikes around the migration crisis and the Ukraine war
 - Defence is more episodic
 
-![Macroeconomics vs. Health over time](figures/temporal_topic/topic_prevalence_economic.png)
+![Macroeconomics vs. Health over time](figures/topic_prevalence_over_time/topic_prevalence_economic.png)
 *Figure 8: Macroeconomics vs. Health over time with crisis markers (AT, HR, GB).*
 
 Rhetoric moves in parallel: politically charged language rises during the 2015 migration crisis, COVID-19 and the Ukraine war but does not stay elevated. `politic` spikes and reverts quickly, while `moral` vocabulary settles back more slowly.
 
-![Political language over time](figures/temporal_liwc/liwc_temporal_political.png)
+![Political language over time](figures/liwc_over_time/liwc_temporal_political.png)
 *Figure 9: `politic`, `power`, `moral` and `money` over time (three-month moving average) with crisis markers.*
 
 ### Cross-lingual embedding consistency (AT, HR)
@@ -186,23 +186,23 @@ Rhetoric moves in parallel: politically charged language rises during the 2015 m
 - Similarity increases mildly with text length
 - This supports running LIWC-22 on the English MT
 
-![Cross-lingual consistency, Austria](figures/embedding_quality/embedding_quality_austria.png)
+![Cross-lingual consistency, Austria](figures/cross_lingual_similarity/embedding_quality_austria.png)
 *Figure 10a: Cosine similarity between native and English-MT embeddings, Austria.*
 
-![Cross-lingual consistency, Croatia](figures/embedding_quality/embedding_quality_croatia.png)
+![Cross-lingual consistency, Croatia](figures/cross_lingual_similarity/embedding_quality_croatia.png)
 *Figure 10b: Cosine similarity between native and English-MT embeddings, Croatia.*
 
 ### More figures
 
 | Folder | Contents |
 |---|---|
-| [`figures/confusion/`](figures/confusion/) | Confusion matrices per country |
-| [`figures/topic_distribution/`](figures/topic_distribution/) | Topic shares, pipeline vs. ParlaCAP reference, per country |
-| [`figures/liwc_z_scores/`](figures/liwc_z_scores/) | Topic × LIWC interaction heatmaps (per country and combined), plus the heatmaps above |
-| [`figures/temporal_liwc/`](figures/temporal_liwc/) | LIWC-22 categories over time: affect, cognitive, political, pronouns, summary, time orientation |
-| [`figures/temporal_party/`](figures/temporal_party/) | Per-party trajectories (AT, HR) for analytic, anger, anxiety, authentic, moral, sadness, tone |
-| [`figures/temporal_topic/`](figures/temporal_topic/) | Topic prevalence over time: economic, security, social |
-| [`figures/embedding_quality/`](figures/embedding_quality/) | Cross-lingual embedding similarity (AT, HR) |
+| [`figures/confusion_matrices/`](figures/confusion_matrices/) | Confusion matrices per country |
+| [`figures/topic_distributions/`](figures/topic_distributions/) | Topic shares, pipeline vs. ParlaCAP reference, per country |
+| [`figures/liwc_profiles/`](figures/liwc_profiles/) | Topic × LIWC interaction heatmaps (per country and combined), plus the heatmaps above |
+| [`figures/liwc_over_time/`](figures/liwc_over_time/) | LIWC-22 categories over time: affect, cognitive, political, pronouns, summary, time orientation |
+| [`figures/party_style_over_time/`](figures/party_style_over_time/) | Per-party trajectories (AT, HR) for analytic, anger, anxiety, authentic, moral, sadness, tone |
+| [`figures/topic_prevalence_over_time/`](figures/topic_prevalence_over_time/) | Topic prevalence over time: economic, security, social |
+| [`figures/cross_lingual_similarity/`](figures/cross_lingual_similarity/) | Cross-lingual embedding similarity (AT, HR) |
 
 ---
 
@@ -231,13 +231,13 @@ master-thesis/
 ├── data/                                         # Local data, not in the repo (see below)
 ├── figures/
 │   ├── pipeline.png
-│   ├── confusion/
-│   ├── embedding_quality/
-│   ├── liwc_z_scores/
-│   ├── temporal_liwc/
-│   ├── temporal_party/
-│   ├── temporal_topic/
-│   └── topic_distribution/
+│   ├── confusion_matrices/
+│   ├── cross_lingual_similarity/
+│   ├── liwc_over_time/
+│   ├── liwc_profiles/
+│   ├── party_style_over_time/
+│   ├── topic_distributions/
+│   └── topic_prevalence_over_time/
 ├── thesis_savkovic.pdf               # Full thesis
 ├── paper_savkovic.pdf                # Journal manuscript (under review)
 ├── thesis_defense_savkovic.pptx      # Defence slides
@@ -293,7 +293,7 @@ data/
 | 3 | `02_topic_modelling_and_cap_mapping.ipynb` | processed pickles, LIWC CSVs, ParlaCAP test sets | `data/{AT,HR,GB}/{C}_final.pkl` |
 | 4 | `03_evaluation_and_figures.ipynb` | `*_final.pkl`, LIWC-22 norms | `figures/*/` |
 
-The cross-lingual similarity plots in `figures/embedding_quality/` are not generated by these notebooks.
+The cross-lingual similarity plots in `figures/cross_lingual_similarity/` are not generated by these notebooks.
 
 ### 4. Requirements
 
