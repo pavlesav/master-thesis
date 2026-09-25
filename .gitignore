@@ -25,7 +25,7 @@ Thumbs.db
 
 # Environment variables
 .env
-/code/data folder
+/data/
 
 # Local assistant configuration
 .claude/
