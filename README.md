@@ -1,6 +1,6 @@
 # Beyond the Speech: Context-Aware Topic Labelling and Linguistic Style in Parliamentary Debates
 
-Master's thesis, Graz University of Technology (MSc Computational Social Systems), 2026. Supervised by Stefan Thalmann and Denis Helic.
+Master's thesis, Graz University of Technology (MSc Computational Social Systems), 2026. Supervised by Stefan Thalmann and Denis Helic. Full text: [`docs/msc_thesis.pdf`](docs/msc_thesis.pdf).
 
 ## At a glance
 
@@ -238,9 +238,10 @@ master-thesis/
 │   ├── party_style_over_time/
 │   ├── topic_distributions/
 │   └── topic_prevalence_over_time/
-├── thesis_savkovic.pdf               # Full thesis
-├── paper_savkovic.pdf                # Journal manuscript (under review)
-├── thesis_defense_savkovic.pptx      # Defence slides
+├── docs/
+│   ├── msc_thesis.pdf                            # Full thesis
+│   ├── journal_manuscript.pdf                    # Journal manuscript (under review)
+│   └── defense_slides.pptx                       # Defence slides
 ├── requirements.txt
 ├── LICENSE
 └── README.md
@@ -326,7 +327,7 @@ The cross-lingual similarity plots in `figures/cross_lingual_similarity/` are no
 }
 ```
 
-A journal article based on this thesis (Pavle Savković, Stefan Thalmann, Armin Spök, Denis Helic) is under review at the *Journal of Computational Social Science*; the submitted manuscript is included as [`paper_savkovic.pdf`](paper_savkovic.pdf).
+A journal article based on this thesis (Pavle Savković, Stefan Thalmann, Armin Spök, Denis Helic) is under review at the *Journal of Computational Social Science*; the submitted manuscript is included as [`docs/journal_manuscript.pdf`](docs/journal_manuscript.pdf).
 
 ---
 
