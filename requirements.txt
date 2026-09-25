@@ -1,9 +1,21 @@
-pandas>=1.5.0
+# Core
 numpy>=1.21.0
+pandas>=1.5.0
+scikit-learn>=1.1.0
+tqdm
+jupyter>=1.0.0
+
+# Embeddings and topic modelling (01, 02)
+torch
+sentence-transformers
+bertopic
+umap-learn
+
+# CAP mapping via LLM (02)
+openai
+python-dotenv
+
+# Visualization and LIWC tables (03)
 matplotlib>=3.5.0
 seaborn>=0.11.0
-scipy>=1.9.0
-statsmodels>=0.13.0
-jupyter>=1.0.0
 openpyxl>=3.0.0
-scikit-learn>=1.1.0
